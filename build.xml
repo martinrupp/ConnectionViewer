@@ -81,7 +81,13 @@
                 <attribute name="Main-Class" value="connectionviewer.ConnectionViewer"/>
             </manifest>
         </jar>
-        <copy file="ConnectionViewer.jar" todir="ConnectionViewer.app/Contents/Resources/Java/" />
+		<exec executable="cp">
+			<arg line="-r"/>
+			<arg line="AppTemplate.app"/>
+			<arg line="ConnectionViewer.app"/>
+		</exec>
+		<chmod file="./ConnectionViewer.app/Contents/MacOS/JavaApplicationStub" perm="x"/>
+		<copy file="ConnectionViewer.jar" todir="./ConnectionViewer.app/Contents/Resources/Java/" />
         <!-- 
         <copy file="ConnectionViewer.jar" todir="/Users/mrupp/Documents/workspace/ug4svn/tools/" />
         <copydir src="ConnectionViewer.app" dest="/Users/mrupp/Documents/workspace/ug4svn/tools/ConnectionViewer.app" />
