@@ -26,18 +26,34 @@ public class tikzGraphics2D extends EmptyGraphics2D
 	String colorstring, fillstring;
 	Color currentColor, setColor;
 	Rectangle baseRect;
-	tikzGraphics2D(Rectangle baseRect, FileWriter file, double scaling) throws IOException
+	String filename;
+	tikzGraphics2D(String filename, Rectangle baseRect, FileWriter file, double scaling) throws IOException
 	{
 		this.baseRect = baseRect;
 		this.file = file;
+		this.filename = filename;
 		
 		setColor = currentColor = Color.BLACK;
-		file.write("\\begin{tikzpicture}\n");		
+		file.write("\\begin{figure}\n"
+				+"\\begin{tikzpicture}\n"
+				+"\\centering\n"
+				+"\\def\\dy{0.0}");		
+		
+
 		fillstring=colorstring = "";
 		xscale= scaling;
 		yscale = -scaling;
 	}
-	
+	void finish() throws IOException
+	{
+		file.write(
+				"\\end{tikzpicture}\n"
+				+"\\caption{"+filename+"}\n"
+				+"\\label{tikzpicture:"+filename+"}\n"
+				+"\\end{figure}\n"
+				
+				);
+	}
 	void filewrite(String s)
 	{
 		try {
@@ -172,7 +188,7 @@ public class tikzGraphics2D extends EmptyGraphics2D
 		{
 			checkColor();
 			filewrite("\\draw"+colorstring+"(" + l.getX1()/xscale + ", " + l.getY1()/yscale + ") -- (" 
-					+ (l.getX2())/xscale + ", " + (l.getY2())/yscale + ");\n");		
+					+ (l.getX2())/xscale + ", " + (l.getY2())/yscale + "+\\dy);\n");		
 		}
 	}
 	
@@ -183,9 +199,22 @@ public class tikzGraphics2D extends EmptyGraphics2D
 		if(r != null)
 		{
 			checkColor();
-			filewrite("\\fill"+fillstring+"("+r.x/xscale+","+r.y/yscale+") rectangle ("+(r.x+r.width)/xscale+","+(r.y+r.height)/yscale+");\n");
+			filewrite("\\fill"+fillstring+"("+r.x/xscale+4+","+r.y/yscale+") rectangle ("+(r.x+r.width)/xscale+","+(r.y+r.height)/yscale+");\n");
 		}
 	}
+	
+	@Override
+	public void fillPolygon(int[] x, int[] y, int N) 
+	{		
+		checkColor();
+		filewrite("\\draw[draw=myc, fill=myc] ");
+		
+		for(int i=0; i<N; i++)
+			filewrite("("+x[i]/xscale + "," + y[i]/yscale + ") -- ");
+		filewrite("(" + x[0]/xscale + "," + y[0]/yscale + ");\n");
+
+	}
+
 	
 	@Override
 	public void drawString(String string, int x, int y) {
@@ -194,17 +223,14 @@ public class tikzGraphics2D extends EmptyGraphics2D
 
 	@Override
 	public void drawString(String string, float x, float y) {
-		if(clipPoint(x, y))
-			filewrite("\\draw("+x/xscale+","+y/yscale+") node {\\verb@"+string+"@};\n");
+		if(!clipPoint(x, y)) return;
+		//filewrite("\\draw("+x/xscale+","+y/yscale+") node {\\verb@"+string+"@};\n");
+		filewrite("\\draw("+((x+4)/xscale)+","+((y+4)/yscale)+") node {"+string+"};\n");
 	}
 	
 	@Override
 	public void setColor(Color color) {		
 		setColor = color;
-	}	
+	}		
 	
-	void finish() throws IOException
-	{
-		file.write("\\end{tikzpicture}\n");
-	}
 }

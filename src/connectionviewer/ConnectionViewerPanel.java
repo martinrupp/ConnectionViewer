@@ -1,5 +1,5 @@
 /*
- Copyright (c) 2011-2013, Martin Rupp, University Frankfurt
+ Copyright (c) 2011-2015, Martin Rupp, University Frankfurt
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -52,9 +52,13 @@ import javax.swing.JDialog;
 import javax.swing.JPanel;
 import de.erichseifert.vectorgraphics2d.*;
 import java.io.*;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.jar.JarFile;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.ScrollPaneConstants;
@@ -66,7 +70,9 @@ import javax.swing.ScrollPaneConstants;
  */
 public class ConnectionViewerPanel extends javax.swing.JPanel
 {
-	static final public String sConnectionViewerVersion = "3.31";
+	static final public String sConnectionViewerVersion = 
+			"3.32";
+			//"3.32b built " + getClassBuildTime();
 
 	private static final long serialVersionUID = 1L;
 
@@ -125,6 +131,9 @@ public class ConnectionViewerPanel extends javax.swing.JPanel
 	final static BasicStroke stroke = new BasicStroke(1.5f);
 	final static BasicStroke wideStroke = new BasicStroke(3.0f);	
 	
+	boolean bVec = false;
+	
+	
 	/**
 	 * Creates new form ConnectionViewerPanel
 	 */
@@ -149,7 +158,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel
 
 		jProgressBar.setMaximum(100);
 	}
-	boolean bVec = false;
+	
 
 
 	
@@ -429,6 +438,42 @@ public class ConnectionViewerPanel extends javax.swing.JPanel
 		return true;
 	}
 
+	void setCVSize(int width, int height)
+	{
+		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+	}
+    
+	void setCheckBox(CommandLineHelper cl, String param, javax.swing.JCheckBox cb)
+	{
+		if(cl.HasParam(param))
+		{
+			int b = cl.GetParamInt(param, 0);
+			cb.setSelected(b != 0);
+		}
+	}
+	
+	void readArgs(CommandLineHelper cl)
+	{
+		scaleZoom = cl.GetParamDouble("-scaleZoom", scaleZoom);
+		setCheckBox(cl, "-arrowConnections", jArrowConnectionsBox1);
+		setCheckBox(cl, "-automaticReload", jAutomaticReloadBox);
+		setCheckBox(cl, "-drawConnections", jDrawConnections);
+		setCheckBox(cl, "-drawConvection", jDrawConvectionBox);
+		setCheckBox(cl, "-drawDiffusion", jDrawDiffusionBox);
+		setCheckBox(cl, "-showParallelNodes", jShowParallelNodes);
+		
+		jArrowSizeSlider.setValue( cl.GetParamInt("-arrowSize", jArrowSizeSlider.getValue()));
+		jFontsizeSlider.setValue( cl.GetParamInt("-fontsize", jFontsizeSlider.getValue()));
+		jZCompressionSlider.setValue( cl.GetParamInt("-zcompression", jZCompressionSlider.getValue()));
+		
+		if(cl.HasParam("-exportPDF"))
+			ExportToPDF(cl.GetParamString("-exportPDF", "file.pdf"));
+		if(cl.HasParam("-exportTex"))
+			ExportToTex(cl.GetParamString("-exportTex", "file.tex"));		
+			
+		repaint();
+	}
+
 	private class FileChangeTask extends TimerTask
 	{
 		public void run()
@@ -479,6 +524,12 @@ public class ConnectionViewerPanel extends javax.swing.JPanel
 		checkIfParallelReadingDone();
 	}
 	
+	public void waitForReadingDone()
+	{
+		for (int i = 0; i < matrices.length; i++)
+			if (matrices[i] != null)
+				matrices[i].waitForReadingDone();		
+	}
 	synchronized void checkIfParallelReadingDone()
 	{
 		int toread = 0;
@@ -663,7 +714,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel
 		TranslateDy = 0;
 		System.out.println("Translate: " + TranslateDx + ", " + TranslateDy);
 
-		scaleZoom = 1.0;
+		scaleZoom = 0.9;
 		System.out.println("TranslateDx = " + TranslateDx + " TranslateDy=" + TranslateDy + " Zoom = " + scaleZoom);
 		jConnectionDisplay.repaint();
 	}
@@ -694,7 +745,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel
 	public Point TranslatePoint(Point3D p)
 	{
 		Dimension d = jConnectionDisplay.getSize();
-		double dzoom = Math.min(d.width / globalBounds.getWidth(), d.height / globalBounds.getHeight()) * 0.9;
+		double dzoom = Math.min(d.width / globalBounds.getWidth(), d.height / globalBounds.getHeight());
 		if (dimension == 2)
 		{
 
@@ -1501,11 +1552,11 @@ public class ConnectionViewerPanel extends javax.swing.JPanel
 
 		if (i < 0)
 		{
-			factor = 1 / 0.9;
+			factor = 1 / 0.91;
 			i = -i;
 		} else
 		{
-			factor = 0.9;
+			factor = 0.91;
 		}
 		//while(i-- > 0)
 		scaleZoom *= factor;
@@ -1521,7 +1572,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel
 			return;
 		}
 		Dimension d = jConnectionDisplay.getSize();
-		double dzoom = Math.min(d.width / globalBounds.getWidth(), d.height / globalBounds.getHeight()) * 0.9;
+		double dzoom = Math.min(d.width / globalBounds.getWidth(), d.height / globalBounds.getHeight());
 		bDragged = true;
 		int dx = lastPoint.x - evt.getX();
 		int dy = evt.getY() - lastPoint.y;
@@ -1576,11 +1627,13 @@ public class ConnectionViewerPanel extends javax.swing.JPanel
 		lastPoint = null;
 		Point p = new Point(evt.getX(), evt.getY());
 
-		for (int i = 0; i < matrices.length; i++)
+		if ((evt.getModifiers() & MouseEvent.SHIFT_MASK) != MouseEvent.SHIFT_MASK)
 		{
-			matrices[i].clearSelection();
+			// if shift is not pressed, clear selection
+			for (int i = 0; i < matrices.length; i++)
+				matrices[i].clearSelection();
 		}
-
+		
 
 		boolean bSelected[] = new boolean[matrices.length];
 		String s = "";
@@ -1637,6 +1690,27 @@ public class ConnectionViewerPanel extends javax.swing.JPanel
         // TODO add your handling code here:
     }//GEN-LAST:event_jComponentListMouseClicked
 
+	void ExportToTex(String filename)
+	{
+		FileWriter file;
+		try
+		{
+			file = new FileWriter(filename);
+			try
+			{
+				matrices[0].writeLatex(file);
+				file.close();
+			} catch (IOException ex)
+			{
+			}
+		} catch (FileNotFoundException ex)
+		{
+		}
+		catch (IOException ex)
+		{
+			Logger.getLogger(ConnectionViewerPanel.class.getName()).log(Level.SEVERE, null, ex);
+		}
+	}
 	public void ExportToTex()
 	{
 		 if (cvf == null || filename == null || matrices == null || matrices.length == 0)
@@ -1654,24 +1728,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel
 
         if (filediag.getFile() != null)
         {
-            FileWriter file;
-            try
-            {
-                file = new FileWriter(filediag.getDirectory() + filediag.getFile());
-                try
-                {
-                    matrices[0].writeLatex(file);
-                    file.close();
-                } catch (IOException ex)
-                {
-                }
-            } catch (FileNotFoundException ex)
-            {
-            }
-            catch (IOException ex)
-            {
-                Logger.getLogger(ConnectionViewerPanel.class.getName()).log(Level.SEVERE, null, ex);
-            }
+           ExportToTex(filediag.getDirectory() + filediag.getFile());
         }
 
         filediag.dispose();
@@ -1762,6 +1819,26 @@ public class ConnectionViewerPanel extends javax.swing.JPanel
         // TODO add your handling code here:
     }//GEN-LAST:event_jAutomaticReloadBoxActionPerformed
 
+	void ExportToPDF(String filename)
+	{
+		PDFGraphics2D g = new PDFGraphics2D(0.0, 0.0, jConnectionDisplay.getWidth(), jConnectionDisplay.getHeight());
+		for (int i = 0; i < matrices.length; i++)
+			drawmatrix(i, g);
+		// Write the PDF output to a file
+		FileOutputStream file;
+		try
+		{
+			file = new FileOutputStream(filename);
+			try
+			{
+				file.write(g.getBytes());
+			} catch (IOException ex)
+			{
+			}
+		} catch (FileNotFoundException ex)
+		{
+		}
+	}
 	public void ExportToPDF()
 	{
 		if (cvf == null || filename == null || matrices == null || matrices.length == 0)
@@ -1779,23 +1856,8 @@ public class ConnectionViewerPanel extends javax.swing.JPanel
 
         if (filediag.getFile() != null)
         {
-            PDFGraphics2D g = new PDFGraphics2D(0.0, 0.0, jConnectionDisplay.getWidth(), jConnectionDisplay.getHeight());
-            for (int i = 0; i < matrices.length; i++)
-            drawmatrix(i, g);
-            // Write the PDF output to a file
-            FileOutputStream file;
-            try
-            {
-                file = new FileOutputStream(filediag.getDirectory() + filediag.getFile());
-                try
-                {
-                    file.write(g.getBytes());
-                } catch (IOException ex)
-                {
-                }
-            } catch (FileNotFoundException ex)
-            {
-            }
+			ExportToPDF(filediag.getDirectory() + filediag.getFile());
+            
         }
 
         filediag.dispose();
@@ -2017,7 +2079,8 @@ public class ConnectionViewerPanel extends javax.swing.JPanel
 		//event.getWindow().setVisible(false);
 		event.getWindow().dispose();
 	}
-
+	
+	/// try to release some memory
 	public void release()
 	{
 		if (matrices != null)
@@ -2038,4 +2101,30 @@ public class ConnectionViewerPanel extends javax.swing.JPanel
 	{
 		return jArrowSizeSlider.getValue()*0.01;
 	}
+	
+	
+	/**
+	 * Handles files, jar entries, and deployed jar entries in a zip file (EAR).
+	 * @return The date if it can be determined, or null if not.
+	 */
+	private static Date getClassBuildTime() {
+		Date d = null;
+		Class<?> currentClass = new Object() {}.getClass().getEnclosingClass();
+		URL resource = currentClass.getResource(currentClass.getSimpleName() + ".class");
+		if (resource != null) {
+			if (resource.getProtocol().equals("file")) {
+				try {
+					d = new Date(new File(resource.toURI()).lastModified());
+				} catch (URISyntaxException ignored) { }
+			} else if (resource.getProtocol().equals("jar")) {
+				String path = resource.getPath();
+				d = new Date( new File(path.substring(5, path.indexOf("!"))).lastModified() );    
+			}
+		}
+		return d;
+	}
+			private static final Date buildDate = getClassBuildTime();
+	//*/
+
+
 }

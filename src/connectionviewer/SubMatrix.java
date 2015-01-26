@@ -52,6 +52,8 @@ import java.io.IOException;
 import java.text.AttributedCharacterIterator;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 class SubMatrix 
@@ -157,7 +159,7 @@ class SubMatrix
 		
 		double scale = Math.max(dim.height, dim.width)/15.0;
 		
-		tikzGraphics2D tg = new tikzGraphics2D(new Rectangle(0, 0, dim.width, dim.height), file, scale);
+		tikzGraphics2D tg = new tikzGraphics2D(filename, new Rectangle(0, 0, dim.width, dim.height), file, scale);
 		
 /*			void paint(Graphics g, boolean bPrintEntriesInWindow,
 			boolean bPrintNumbersInWindow,
@@ -165,7 +167,8 @@ class SubMatrix
 			boolean bDrawConvection, boolean bDrawDiffusion,
 			int fontsize)*/
 
-		cv.drawmatrix(this, tg);
+		for(SubMatrix mat : cv.matrices)
+			cv.drawmatrix(mat, tg);
 		
 		tg.finish();
 
@@ -524,7 +527,8 @@ class SubMatrix
 		if(!bSuccessfullyLoaded) return false;
 		double dmin = 9;
 		boolean bSelected = false;
-		clearSelection();
+		if(!selected.isEmpty()) bSelected = true;
+		//clearSelection();
 		for (int i = 0; i < iNrOfNodes; i++) 
 		{
 			if(!isVisible(i)) continue;
@@ -656,10 +660,11 @@ class SubMatrix
 		}
 	}*/
 	
-	void draw_connections(Graphics g, boolean bArrowConnections, boolean bDrawConvection, 
+	void draw_connections(Graphics g, boolean bDrawConnections, boolean bArrowConnections, boolean bDrawConvection, 
 			boolean bDrawDiffusion, Point[] tpos)
 	{
-			
+		if(bDrawConnections == false && bDrawConvection == false) return;
+		
 		Point p1, p2;
 		g.setColor(Color.lightGray);
 		for (int i = 0; i < iNrOfNodes; i++) {
@@ -672,14 +677,14 @@ class SubMatrix
 			double ddsum=0;
 			double dmax=0; 
 			g.setColor(Color.lightGray);
-			
+			double diag=1;
 						
 			if(bDrawConvection || bDrawDiffusion) 
 			{
 				for (int j = 0; j < matrix[i].size(); j++)				
 				{
 					connection c = matrix[i].get(j);
-					if(i == c.to) continue;		
+					
 					if(!bShow2[c.to]) continue;
 					double dd = c.getDoubleValue();
 					if(Double.isNaN(dd))
@@ -687,6 +692,7 @@ class SubMatrix
 						bDrawConvection = bDrawDiffusion = false;
 						break;
 					}
+					if(i == c.to) { diag = dd; continue; }
 					if(dd > 0) continue;
 					x -= dd*(tpos[c.to].x-p1.x);
 					y -= dd*(tpos[c.to].y-p1.y);
@@ -695,34 +701,39 @@ class SubMatrix
 				}
 			}
 				
-			for (int j = 0; j < matrix[i].size(); j++) {
-				connection c = matrix[i].get(j);
-				if(i == c.to) continue;
-				if(!bShow2[c.to]) continue;
-		
-				if(bDrawDiffusion)
-				{
-					double dd = c.getDoubleValue();					
-					float f = 1-Math.abs((float)(dd/dmax));
-					if(f >= 0 && f <= 1)
-						g.setColor(new Color(f, f, f));
-					else
-						g.setColor(Color.lightGray);
-				}
-				p2 = tpos[c.to];
-				if (bArrowConnections) {
-					drawArrow(g, p1.x, p1.y, p2.x, p2.y, 4, 0.4);
-				} else {
-					g.drawLine(p1.x, p1.y, p2.x, p2.y);
+			if(bDrawConnections)
+			{
+				for (int j = 0; j < matrix[i].size(); j++) {
+					connection c = matrix[i].get(j);
+					if(i == c.to) continue;
+					if(!bShow2[c.to]) continue;
+
+					if(bDrawDiffusion)
+					{
+						double dd = c.getDoubleValue();					
+						float f = 1-Math.abs((float)(dd/dmax));
+						if(f >= 0 && f <= 1)
+							g.setColor(new Color(f, f, f));
+						else
+							g.setColor(Color.lightGray);
+					}
+					p2 = tpos[c.to];
+					if (bArrowConnections) {
+						drawArrow(g, p1.x, p1.y, p2.x, p2.y, 4, 0.4);
+					} else {
+						g.drawLine(p1.x, p1.y, p2.x, p2.y);
+					}
 				}
 			}
-			
+
 			if(bDrawConvection && Math.abs(ddsum/dmax)>0.01)
 			{
 				g.setColor(Color.red);
 				ddsum/=cv.getArrowSize();
 				x = x/ddsum*2;
 				y = y/ddsum*2;
+//				x/=diag*30;
+//				y/=diag*30;
 				drawArrow(g, p1.x, p1.y, (int)(p1.x+x), (int)(p1.y+y), 4, 1.0);
 			}
 		}
@@ -913,7 +924,7 @@ class SubMatrix
 		int space = fm == null ? 0 : fm.stringWidth(" ");
 		// draw Connections
 		
-		if (bDrawConnections) draw_connections(g, bArrowConnections, bDrawConvection, bDrawDiffusion, tpos);
+		draw_connections(g, bDrawConnections, bArrowConnections, bDrawConvection, bDrawDiffusion, tpos);
 
 		if (!bShowParallelNodes) draw_markers(g, tpos);
 
@@ -933,14 +944,14 @@ class SubMatrix
 	///////////////////////////////////////////////////////////////////////////
 	// read file
 	
-	public class readFileThread implements Runnable 
+	public class ReadFileThreadClass implements Runnable 
 	{
 
 		CountingStreamReader f;
 		String filename;
 		long fsize;
 
-		public readFileThread(CountingStreamReader f, String filename, long fsize) {
+		public ReadFileThreadClass(CountingStreamReader f, String filename, long fsize) {
 			this.f = f;
 			this.filename = filename;
 			this.fsize = fsize;
@@ -950,15 +961,31 @@ class SubMatrix
 			readFile(f, filename, fsize);
 		}
 	}
+	
+	Thread readFileThread =null;
+	
+	public void waitForReadingDone()
+	{
+		if(readFileThread != null)
+			try
+			{				
+				readFileThread.join();
+			}
+			catch (InterruptedException ex)
+			{
+				Logger.getLogger(SubMatrix.class.getName()).log(Level.SEVERE, null, ex);
+			}
+		readFileThread = null;
+	}
 
 	public boolean readFilePar(TarFile.TarComponent component) throws FileNotFoundException, IOException
 	{
 		filename = component.filename;
 		long fsize = component.size;
 		CountingStreamReader f = component.getStream();
-		readFileThread t = new readFileThread(f, filename, fsize);
-		Thread th = new Thread(t);
-		th.start();
+		ReadFileThreadClass t = new ReadFileThreadClass(f, filename, fsize);
+		readFileThread = new Thread(t);		
+		readFileThread.start();
 		//readFile(f, filename, fsize);
 		return true;
 	}
@@ -975,9 +1002,9 @@ class SubMatrix
 		}
 		if(true)
 		{
-			readFileThread t = new readFileThread(f, filename, fsize);
-			Thread th = new Thread(t);
-			th.start();
+			ReadFileThreadClass t = new ReadFileThreadClass(f, filename, fsize);
+			readFileThread = new Thread(t);
+			readFileThread.start();
 		}
 		else
 			readFile(f, filename, fsize);

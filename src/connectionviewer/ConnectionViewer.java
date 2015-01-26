@@ -1,5 +1,5 @@
 /*
- Copyright (c) 2011-2013, Martin Rupp, University Frankfurt
+ Copyright (c) 2011-2015, Martin Rupp, University Frankfurt
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without
@@ -96,13 +96,31 @@
  * - reload components fix
  * - axis
  * 3.31
- * - moving of parallel nodes.
+ * - moving of parallel nodes.java -cp ConnectionViewer.jar connectionviewer.ConnectionViewer Stiffness.mat
  * - min/max for values
- *
+ * 3.32
+ * - tex export for parallel fixed.
+ * - fixed command line call: java -cp ConnectionViewer.jar connectionviewer.ConnectionViewer Stiffness.mat
+ * - additional CommandLine parameters. example:
+ *   java -cp ConnectionViewer.jar connectionviewer.ConnectionViewer Stiffness.mat 
+ *     -scaleZoom 0.99 -height 700 -width 950 -drawConvection 1 -drawConnections 1 -exportPDF myfile.pdf -quit
+ *   options are (D double, I integer, B 0 or 1)
+ *   -width I -height I -arrowSize I -fontsize I -zcompression I
+ *   -scaleZoom D
+ *   -arrowConnections B -automaticReload B -drawConnections B -drawConvection B
+ *   -drawDiffusion B -showParallelNodes B
+ * 
+ *   -exportPDF filename.pdf
+ *   -exportTex filename.tex
+ *   -quit (quit after exporting)
+ * 
+	private class FileChangeTask extends TimerTask
  * @author Martin Rupp
  * @email martin.rupp@gcsc.uni-frankfurt.de
  */
 package connectionviewer;
+
+import java.awt.Dimension;
 
 /**
  *
@@ -258,6 +276,8 @@ public class ConnectionViewer extends javax.swing.JFrame
 		}		
 	}
 	
+	
+	
 	public static void main(String args[]) throws InterruptedException
 	{
 		System.out.println("Runtime.getRuntime().availableProcessors() = " + Runtime.getRuntime().availableProcessors());
@@ -268,10 +288,31 @@ public class ConnectionViewer extends javax.swing.JFrame
 
 		cvf = new ConnectionViewer();
 		if (filename != null)
+		{	
+			CommandLineHelper cl = new CommandLineHelper(args);
+			int height = cvf.getSize().height;
+			int width = cvf.getSize().width;
+			height = cl.GetParamInt("-height", height);
+			width = cl.GetParamInt("-width", width);
+			cvf.setSize(new Dimension(width, height));
+			
 			cvf.readFile(filename);
-		cvf.setVisible(true);
-
-		if (MacOSXHelper.IsMacOSX())
+			cvf.setVisible(true);
+			
+			ConnectionViewerPanel p = cvf.jConnectionViewerPanel;
+			p.waitForReadingDone();
+			
+			
+			
+			cvf.repaint();
+						
+			p.readArgs(cl);
+			
+			if(cl.HasParam("-quit"))
+				System.exit(0);
+			
+		}
+		else if (MacOSXHelper.IsMacOSX())
 		{
 			/*JFrame frame = new JFrame("ConnectionViewer");
 			frame.setVisible(true);
