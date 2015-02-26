@@ -595,8 +595,8 @@ class SubMatrix
 		for (int i = 0; i < selected.size(); i++) 
 		{
 			int iSelectedNode = selected.get(i).intValue();				
-			cv.TranslateDx = -pos[iSelectedNode].x;
-			cv.TranslateDy = -pos[iSelectedNode].y;			
+			cv.TranslateDx = -pos[iSelectedNode].x + cv.globalBounds.getCenterX();
+			cv.TranslateDy = -pos[iSelectedNode].y  + cv.globalBounds.getCenterY();
 		}
 		cv.repaint();
 	}

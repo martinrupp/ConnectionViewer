@@ -37,7 +37,7 @@ public class tikzGraphics2D extends EmptyGraphics2D
 		file.write("\\begin{figure}\n"
 				+"\\begin{tikzpicture}\n"
 				+"\\centering\n"
-				+"\\def\\dy{0.0}");		
+				+"\\def\\dy{0.0}\n");		
 		
 
 		fillstring=colorstring = "";
@@ -48,8 +48,7 @@ public class tikzGraphics2D extends EmptyGraphics2D
 	{
 		file.write(
 				"\\end{tikzpicture}\n"
-				+"\\caption{"+filename+"}\n"
-				+"\\label{tikzpicture:"+filename+"}\n"
+				+"% from file "+filename+"\n"				
 				+"\\end{figure}\n"
 				
 				);

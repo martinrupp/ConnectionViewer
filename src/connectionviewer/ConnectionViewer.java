@@ -96,7 +96,7 @@
  * - reload components fix
  * - axis
  * 3.31
- * - moving of parallel nodes.java -cp ConnectionViewer.jar connectionviewer.ConnectionViewer Stiffness.mat
+ * - moving of parallel nodes. (hold shift)
  * - min/max for values
  * 3.32
  * - tex export for parallel fixed.
@@ -113,8 +113,9 @@
  *   -exportPDF filename.pdf
  *   -exportTex filename.tex
  *   -quit (quit after exporting)
+ * 3.33: - some tixz enhancements. 
+ *       - fixed toselection (again?)
  * 
-	private class FileChangeTask extends TimerTask
  * @author Martin Rupp
  * @email martin.rupp@gcsc.uni-frankfurt.de
  */
