@@ -1,7 +1,14 @@
+# Build output
 /build/
 /out/
 /bin/
+
+# Gradle
 /.gradle/
+# local state written by the Gradle Kotlin DSL
+/.kotlin/
+
+# IDEs
 /.vscode/
 /.settings/
 .classpath
@@ -9,3 +16,7 @@
 /.idea/
 /ConnectionViewer.iml
 /.nb-gradle/
+/nbproject/private/
+
+# macOS Finder metadata
+.DS_Store

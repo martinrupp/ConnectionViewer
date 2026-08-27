@@ -30,11 +30,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package edu.gcsc.connectionviewer;
 
+import java.awt.Desktop;
 import java.awt.Toolkit;
+import java.awt.desktop.AboutEvent;
+import java.awt.desktop.AboutHandler;
+import java.awt.desktop.OpenFilesEvent;
+import java.awt.desktop.OpenFilesHandler;
+import java.awt.desktop.QuitEvent;
+import java.awt.desktop.QuitHandler;
+import java.awt.desktop.QuitResponse;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
+import java.io.File;
 import javax.swing.AbstractAction;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
@@ -116,38 +123,89 @@ public class MacOSXHelper
 	}
 	
 	
-	static boolean isInitialized = false;		
+	static boolean isInitialized = false;
 	/**
-	 * This function inits the Mac OS Open File Handler
-	 * It is written this way (with that Class.forName...)
-	 * to ensure that it is also working on systems
-	 * that do not have com.apple.eawt.*
-	 * Otherwise the program would not be able to start.
+	 * This function inits the Mac OS About / Open File / Quit handlers.
+	 *
+	 * Up to Java 8 this used com.apple.eawt.Application via reflection. Since
+	 * Java 9 com.apple.eawt is an internal package of the java.desktop module
+	 * and is no longer exported, so that code fails with
+	 * "cannot access class com.apple.eawt.Application ... does not export".
+	 * The public, cross-platform replacement is java.awt.Desktop together with
+	 * the handler interfaces in java.awt.desktop. Every handler is guarded by
+	 * isSupported(), so this stays a no-op on platforms without the feature.
+	 *
+	 * Note: eawt's "open application" event has no equivalent in the public
+	 * API - the caller is responsible for showing its main window at startup.
+	 * MacOSHandler.handleOpenApplication is therefore no longer invoked here.
+	 *
 	 * @see MacOSHandler
-	 * @param handler 
+	 * @param handler
 	 */
-	public static void InitMacOSX(MacOSHandler handler)
+	public static void InitMacOSX(final MacOSHandler handler)
 	{
 		if(IsMacOSX() == false || isInitialized)
-			return;		
+			return;
+		if(Desktop.isDesktopSupported() == false)
+		{
+			System.out.println("java.awt.Desktop unsupported, skipping macOS integration.");
+			return;
+		}
 		try
-		{	
+		{
 			System.out.println("IsMacOSX!");
-			Class appClass = Class.forName("com.apple.eawt.Application");
-			Object application = appClass.newInstance();
-		
-			Class listClass = Class.forName("com.apple.eawt.ApplicationListener");
-			Method addAppListmethod = appClass.getDeclaredMethod("addApplicationListener", listClass);
-			
-			Class adapterClass = Class.forName("com.apple.eawt.ApplicationAdapter");
-			Object listener = ListenerProxy.newInstance(handler, adapterClass.newInstance());
-			addAppListmethod.invoke(application, listener);
+			Desktop desktop = Desktop.getDesktop();
+
+			if(desktop.isSupported(Desktop.Action.APP_OPEN_FILE))
+			{
+				desktop.setOpenFileHandler(new OpenFilesHandler()
+				{
+					@Override
+					public void openFiles(OpenFilesEvent e)
+					{
+						for(File file : e.getFiles())
+						{
+							String str = file.getAbsolutePath();
+							System.out.println("openFiles called, getFilename = " + str);
+							handler.handleOpenFile(str);
+						}
+					}
+				});
+			}
+
+			if(desktop.isSupported(Desktop.Action.APP_ABOUT))
+			{
+				desktop.setAboutHandler(new AboutHandler()
+				{
+					@Override
+					public void handleAbout(AboutEvent e)
+					{
+						handler.handleAbout();
+					}
+				});
+			}
+
+			if(desktop.isSupported(Desktop.Action.APP_QUIT_HANDLER))
+			{
+				desktop.setQuitHandler(new QuitHandler()
+				{
+					@Override
+					public void handleQuitRequestWith(QuitEvent e, QuitResponse response)
+					{
+						if(Boolean.TRUE.equals(handler.handleQuit()))
+							response.performQuit();
+						else
+							response.cancelQuit();
+					}
+				});
+			}
+
 			isInitialized = true;
 		}
-		catch (Exception e)		
+		catch (Exception e)
 		{
 			System.out.println("Error when trying to set up MacOS handler:");
-			System.out.println(e);			
+			System.out.println(e);
 		}
 	}
 	
@@ -169,7 +227,7 @@ public class MacOSXHelper
 	{
 		if(IsMacOSX() == false) return;
 		KeyStroke closeKey = KeyStroke.getKeyStroke(
-				KeyEvent.VK_W, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask());
+				KeyEvent.VK_W, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx());
 		javax.swing.JPanel content = (JPanel) frame.getContentPane();
 		// use WHEN_IN_FOCUSED_WINDOW here!
 		content.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(closeKey, "closeWindow");
@@ -197,69 +255,5 @@ public class MacOSXHelper
 			frame.dispose();
 		}
 		
-	}
-}
-
-/**
- * emulating com.apple.eawt.ApplicationAdapter
- * @author mrupp
- */
-class ListenerProxy implements InvocationHandler 
-{
-    private Object object;
-	private MacOSXHelper.MacOSHandler handler;
-	public static Object newInstance(MacOSXHelper.MacOSHandler handler, Object obj) 
-	{
-		return java.lang.reflect.Proxy.newProxyInstance(obj.getClass().getClassLoader(), obj.getClass().getInterfaces(), new ListenerProxy(handler, obj));
-	}
-	 
-	private ListenerProxy(MacOSXHelper.MacOSHandler handler, Object obj) 
-	{
-		this.handler = handler;
-		this.object = obj;
-	}
-	
-	// this function mostly forwards everything to the MacOSHandler
-	// which is kind of platform-independent.	
-	@Override
-	public Object invoke(Object proxy, Method m, Object[] args) throws Throwable 
-	{
-		Object result = null;
-		try
-		{
-			boolean bHandled = false;
-			if ("handleAbout".equals(m.getName())) 
-			{
-				bHandled = handler.handleAbout();
-			}
-			else if ("handleQuit".equals(m.getName())) 
-			{
-				bHandled = handler.handleQuit();
-			}
-			else if ("handleOpenApplication".equals(m.getName()) || "handleOpenFile".equals(m.getName()))
-			{
-
-			    bHandled = true;
-			    Method getFilename = args[0].getClass().getDeclaredMethod("getFilename");
-			    String str = (String)getFilename.invoke(args[0]);
-			    System.out.println(m.getName() + " called, getFilename = " + str);
-				if("handleOpenApplication".equals(m.getName()))
-					bHandled = handler.handleOpenApplication(str);
-				else
-					bHandled = handler.handleOpenFile(str);
-			}
-			else
-			{
-				bHandled = false;
-				result = m.invoke(object, args);
-			}
-			
-			Object event = args[0];
-			Method eventSetter = Class.forName("com.apple.eawt.ApplicationEvent").
-			getDeclaredMethod("setHandled", Boolean.TYPE);
-			eventSetter.invoke(event, bHandled);			
-		}
-		catch (Exception e) {     }
-		return result;			 	
 	}
 }

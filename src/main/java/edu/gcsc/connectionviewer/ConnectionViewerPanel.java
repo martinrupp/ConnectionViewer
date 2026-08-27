@@ -72,7 +72,7 @@ import javax.swing.ScrollPaneConstants;
  */
 public class ConnectionViewerPanel extends javax.swing.JPanel implements ComponentListener
 {
-	static final public String sConnectionViewerVersion = 
+	static final public String sConnectionViewerVersion =
 			"3.32";
 			//"3.32b built " + getClassBuildTime();
 
@@ -81,37 +81,37 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 	JTextArea jTextArea;
 	ConnectionViewer cvf;
 	private JDialog aboutBox;
-	
-	public int iShowInWindow;	
+
+	public int iShowInWindow;
 	public int iSelectedMatrix;
 	public Point lastPoint;
-	public boolean bDragged = false;	
-	
-	public double xminFactor = 0.0, xmaxFactor = 1.0, 
+	public boolean bDragged = false;
+
+	public double xminFactor = 0.0, xmaxFactor = 1.0,
 			yminFactor = 0.0, ymaxFactor = 1.0,
 			zminFactor = 0.0, zmaxFactor = 1.0;
-	
-	
+
+
 	// file information
 	public SubMatrix matrices[];
 	private int dimension;
 	public int iTotalNrOfNodes;
 	public int iTotalNrOfConnections;
 	public Rectangle3D globalBounds;
-	
+
 	// file loading / reloading
 	private Timer fileChangeTimer;
 	private Boolean reload=false;
 	private double[] loadStatus;
-	private int oldTotalStatus;	
-	private int iDoneReading;	
-	private long lastModified;	
+	private int oldTotalStatus;
+	private int iDoneReading;
+	private long lastModified;
 	private String sError = "no file loaded.";
 	public boolean fileLoaded = false;
 	public String filename;
-	
-	
-		
+
+
+
 	// for transformation
 	double alpha = 0;
 	double beta = 0;
@@ -119,38 +119,38 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 	public double TranslateDx;
 	public double TranslateDy;
 	public double zZoom;
-	
+
 	// min/max value of values
-	double globalMinValue, globalMaxValue;	
+	double globalMinValue, globalMaxValue;
 	boolean bHasValues;
-	
+
 	private int oldWidth = -1;
 	private int oldHeight = -1;
-	
+
 	// double buffer
-	BufferedImage img[];	
-	
+	BufferedImage img[];
+
 	final static BasicStroke stroke = new BasicStroke(1.5f);
-	final static BasicStroke wideStroke = new BasicStroke(3.0f);	
-	
+	final static BasicStroke wideStroke = new BasicStroke(3.0f);
+
 	boolean bVec = false;
-	
-	
+
+
 	/**
 	 * Creates new form ConnectionViewerPanel
 	 */
 	public ConnectionViewerPanel()
 	{
 		initComponents();
-			
+
 		jTextArea = new JTextArea(16, 16);
 		jTextArea.setEditable(false); // set textArea non-editable
 		JScrollPane scroll = new JScrollPane(jTextArea);
 		scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 		scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		
+
 		jSplitPane2.setBottomComponent(scroll);
-		
+
 
 		jPrintNumbersInWindowBox.setSelected(false);
 		jPrintEntriesInWindowBox.setSelected(true);
@@ -160,8 +160,8 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 
 		jProgressBar.setMaximum(100);
 	}
-	
-        
+
+
         /**
          * Sets the main divider location of this panel.
          * @param loc location to set
@@ -169,7 +169,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
         public void setDividerLocation(int loc) {
             jSplitPane1.setDividerLocation(loc);
         }
-        
+
         /**
          * Sets the proportional divider location of this panel.
          * @param loc  location to set
@@ -177,7 +177,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
         public void setDividerLocationProportional(double loc) {
             jSplitPane1.setDividerLocation(loc);
         }
-        
+
         /**
          * Returns the main divider location of this panel.
          * @return the main divider location of this panel
@@ -194,7 +194,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
         public void addDividerLocationChangeListener(PropertyChangeListener l) {
             this.jSplitPane1.addPropertyChangeListener("dividerLocation",l);
         }
-        
+
         /**
          * Removes the specified divider location listener from this panel.
          * @param l listener to remove
@@ -202,7 +202,26 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
         public void removeDividerLocationChangeListener(PropertyChangeListener l) {
             this.jSplitPane1.removePropertyChangeListener("dividerLocation",l);
         }
-	
+
+        /**
+         * Restores layout-derived minimum sizes for the children of the main
+         * split pane.
+         *
+         * initComponents() pins them to (0,0) so the whole panel can be
+         * squeezed into a VRL canvas node. As a side effect the control panel
+         * on the left may be shrunk below its designed width (jPanel2 is laid
+         * out for 120px) whenever the split pane has to take space from a side.
+         * Standalone windows want the original behaviour, where the minimum is
+         * computed from the layout; passing null clears the override.
+         *
+         * Only affects standalone frames - ConnectionViewerType builds its own
+         * ConnectionViewerPanel and sets the sizes it wants explicitly.
+         */
+        public void useLayoutDerivedMinimumSizes() {
+            jSplitPane2.setMinimumSize(null);
+            jConnectionDisplay.setMinimumSize(null);
+        }
+
 	////////////////////////////////////////////////////////////////////////////
 	// selection save/restore
 	ArrayList<ArrayList<Integer>> selection=null;
@@ -211,7 +230,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		if(reload && matrices != null && iNrOfMatrices == matrices.length)
 		{
 			selection = new ArrayList<ArrayList<Integer>>();
-			
+
 			for(int i=0; i<matrices.length; i++)
 			{
 				if(matrices[i] != null)
@@ -222,18 +241,18 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		}
 		else selection = null;
 	}
-	private void restore_selection() 
+	private void restore_selection()
 	{
 		if(selection == null) return;
 		for(int i=0; i<matrices.length; i++)
 			matrices[i].set_selected(selection.get(i));
 		selection = null;
 	}
-	
+
 	////////////////////////////////////////////////////////////////////////////
 	// file loading
 
-	
+
 	void report(String s)
 	{
 		sError = sError + s + "\n";
@@ -251,10 +270,10 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		}
 	}
 
-	
+
 	////////////////////////////////
 	/// FILE READING
-	
+
 	// openDialog
 	/**
 	 * Opens up a FileDialog to select .mat, .pmat, .vec, .pvec or .tarmat files,
@@ -298,13 +317,13 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		//if(fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION )
 		//  readFile(fc.getSelectedFile());
 	}
-	
+
 	public void readFile(String str)
 	{
 		File f = new File(str);
 		if(f != null)	readFile(f);
 	}
-	
+
 	/**
 	 * Opens up a file
 	 * @param file the file to read
@@ -322,14 +341,14 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 	public boolean readFile(File file)
 	{
 		sError="loading ..."; repaint();
-		
+
 		if(fileChangeTimer != null) fileChangeTimer.cancel();
 		System.out.println("loading " + file.getPath());
 		fileLoaded = false;
 		setTitle("ConnectionViewer " + sConnectionViewerVersion + " - no file loaded.");
 
 		filename = file.getPath();
-		lastModified = file.lastModified();		
+		lastModified = file.lastModified();
 
 		int dot = filename.lastIndexOf('.');
 		String extension = filename.substring(dot + 1);
@@ -337,7 +356,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		bVec = false;
 		iDoneReading = 0;
 		jProgressBar.setVisible(true);
-		
+
 		if (extension.equals("pmat") || extension.equals("pvec"))
 		{
 			// file is a parallel file. format is
@@ -347,7 +366,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 				*       parallelFileName2
 				*       parallelFileNameN
 				*/
-			
+
 			iTotalNrOfNodes = 0;
 
 			BufferedReader f;
@@ -368,18 +387,18 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 				{
 					return false;
 				}
-				
+
 				int iNrOfMatrices = Integer.parseInt(line);
-				
+
 				save_selection(iNrOfMatrices);
-				
+
 				matrices = new SubMatrix[iNrOfMatrices];
 				loadStatus = new double[iNrOfMatrices];
-				
-				
+
+
 				setTitle("ConnectionViewer " + sConnectionViewerVersion + " - loading... 0 %");
 				jProgressBar.setValue(0);
-				
+
 				dimension = -1;
 //				for (int i = 0; i < iNrOfMatrices; i++)
 //					matrices[i] = new SubMatrix(this, i, iNrOfMatrices);
@@ -407,11 +426,11 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 			{
 				Logger.getLogger(ConnectionViewerPanel.class.getName()).log(Level.SEVERE, null, ex);
 			}
-		} 
+		}
 		else if (extension.equals("tarmat"))
 		{
 			TarFile t = new TarFile(filename);
-			
+
 			iTotalNrOfNodes = 0;
 
 			BufferedReader f = null;
@@ -427,7 +446,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 			{
 				Logger.getLogger(ConnectionViewerPanel.class.getName()).log(Level.SEVERE, null, ex);
 			}
-			
+
 
 			String line;
 			try
@@ -436,32 +455,32 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 				{
 					return false;
 				}
-				
+
 				int iNrOfMatrices = Integer.parseInt(line);
-				
+
 				save_selection(iNrOfMatrices);
-				
+
 				matrices = new SubMatrix[iNrOfMatrices];
 				loadStatus = new double[iNrOfMatrices];
-				
-				
+
+
 				setTitle("ConnectionViewer " + sConnectionViewerVersion + " - loading... 0 %");
 				jProgressBar.setValue(0);
-				
+
 				dimension = -1;
 				for (int i = 0; i < iNrOfMatrices; i++)
 				{
 					String name = f.readLine();
 					matrices[i] = new SubMatrix(this, i, iNrOfMatrices);
-					matrices[i].readFilePar(t.getComponent(name));				
+					matrices[i].readFilePar(t.getComponent(name));
 				}
 				f.close();
 			} catch (IOException ex)
 			{
 				Logger.getLogger(ConnectionViewerPanel.class.getName()).log(Level.SEVERE, null, ex);
 			}
-		} 
-		
+		}
+
 		else
 		{
 			iTotalNrOfNodes=0;
@@ -475,7 +494,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 			matrices[0].readFilePar(new File(filename));
 
 		}
-	
+
 		return true;
 	}
 
@@ -483,7 +502,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 	{
 		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 	}
-    
+
 	void setCheckBox(CommandLineHelper cl, String param, javax.swing.JCheckBox cb)
 	{
 		if(cl.HasParam(param))
@@ -492,7 +511,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 			cb.setSelected(b != 0);
 		}
 	}
-	
+
 	void readArgs(CommandLineHelper cl)
 	{
 		scaleZoom = cl.GetParamDouble("-scaleZoom", scaleZoom);
@@ -502,16 +521,16 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		setCheckBox(cl, "-drawConvection", jDrawConvectionBox);
 		setCheckBox(cl, "-drawDiffusion", jDrawDiffusionBox);
 		setCheckBox(cl, "-showParallelNodes", jShowParallelNodes);
-		
+
 		jArrowSizeSlider.setValue( cl.GetParamInt("-arrowSize", jArrowSizeSlider.getValue()));
 		jFontsizeSlider.setValue( cl.GetParamInt("-fontsize", jFontsizeSlider.getValue()));
 		jZCompressionSlider.setValue( cl.GetParamInt("-zcompression", jZCompressionSlider.getValue()));
-		
+
 		if(cl.HasParam("-exportPDF"))
 			ExportToPDF(cl.GetParamString("-exportPDF", "file.pdf"));
 		if(cl.HasParam("-exportTex"))
-			ExportToTex(cl.GetParamString("-exportTex", "file.tex"));		
-			
+			ExportToTex(cl.GetParamString("-exportTex", "file.tex"));
+
 		repaint();
 	}
 
@@ -550,9 +569,9 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		}
 	}
 	/**
-	 * 
+	 *
 	 * @param m
-	 * @param d 
+	 * @param d
 	 */
 	synchronized void updateStatus(SubMatrix m, double d)
 	{
@@ -584,12 +603,12 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		}
 		checkIfParallelReadingDone();
 	}
-	
+
 	public void waitForReadingDone()
 	{
 		for (int i = 0; i < matrices.length; i++)
 			if (matrices[i] != null)
-				matrices[i].waitForReadingDone();		
+				matrices[i].waitForReadingDone();
 	}
 	synchronized void checkIfParallelReadingDone()
 	{
@@ -600,11 +619,11 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		if (iDoneReading == toread)
 			fileReadingDone();
 	}
-	
+
 	void calcGlobalBounds()
 	{
 		globalBounds = new Rectangle3D();
-		
+
 		bHasValues = false;
 		for (int i = 0; i < matrices.length; i++)
 		{
@@ -612,7 +631,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 				globalBounds.setRect(matrices[i].getBounds());
 			else
 				globalBounds.add(matrices[i].getBounds());
-						
+
 			if(matrices[i].has_values())
 			{
 				if(bHasValues==false)
@@ -629,7 +648,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 			}
 		}
 	}
-	
+
 	void fileReadingDone()
 	{
 		// matrices2 can be smaller than matrices if some of the matrix files were not found
@@ -648,7 +667,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 			{
 				bVec = matrices[i].isVec();
 			}
-			
+
 			if(i==0)
 				dimension = matrices[i].getDimension();
 			else if (dimension != matrices[i].getDimension())
@@ -664,13 +683,13 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 			iTotalNrOfConnections += matrices[i].get_total_nr_of_connections();
 		}
 		calcGlobalBounds();
-		
+
 		// NANs
 		Boolean hasNaN=false;
 		for (int i = 0; i < matrices.length; i++)
 				if(matrices[i].postprocess_NaNs()) hasNaN=true;
 		if(hasNaN) globalBounds.zmax*=2;
-		
+
 		// connections off if too much nodes/connections
 		if (iTotalNrOfNodes > 100000 || iTotalNrOfConnections > 100000)
 			jDrawConnections.setSelected(false);
@@ -694,7 +713,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 			rezoom();
 
 		}
-		else 
+		else
 			restore_selection();
 		reload = false;
 
@@ -702,14 +721,14 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		fileLoaded = true;
 		setTitle("ConnectionViewer " + sConnectionViewerVersion + " - "
 				+ filename + " (" + matrices.length + " files, total " + iTotalNrOfNodes + " nodes, " + iTotalNrOfConnections + " Connections)");
-		
+
 		if(jAutomaticReloadBox.isSelected())
 		{
 			fileChangeTimer = new Timer();
 			fileChangeTimer.schedule(new FileChangeTask(), 5000, 1000);
 		}
 		else fileChangeTimer = null;
-		
+
 		boolean bConvDiffDrawable = true;
 		for(int i=0; i<matrices.length && bConvDiffDrawable; i++)
 			bConvDiffDrawable = matrices[i].get_conv_diff_drawable();
@@ -723,8 +742,8 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		int icomponents = matrices[0].get_components();
 		for(int i=1; i<matrices.length; i++)
 			icomponents = Math.min(matrices[i].get_components(), icomponents);
-		
-		
+
+
 		String arr[];
 		if(matrices[0].num_fct() != -1)
 		{
@@ -744,20 +763,20 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 				for(int c=0; c<icomponents; c++)
 					arr[r+icomponents*c+1] = "("+(r+1)+", "+(c+1)+")";
 		}
-		
+
 		int oldIndex=jComponentList.getSelectedIndex();
 		int oldLength=jComponentList.getModel().getSize();
 		jComponentList.setModel(new javax.swing.DefaultComboBoxModel(arr));
 		if(oldLength == jComponentList.getModel().getSize())
-			jComponentList.setSelectedIndex(oldIndex);		
+			jComponentList.setSelectedIndex(oldIndex);
 		repaint();
 	}
-	
-	
+
+
 
 	////////////////////////////////////////////////////////////////////////////
 	// translating/zoom
-			
+
 	void zoomToSelection()
 	{
 		if (iSelectedMatrix != -1)
@@ -779,11 +798,11 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		System.out.println("TranslateDx = " + TranslateDx + " TranslateDy=" + TranslateDy + " Zoom = " + scaleZoom);
 		jConnectionDisplay.repaint();
 	}
-	
+
 	Dimension getDrawingSize() {
 		return jConnectionDisplay.getSize();
 	}
-	
+
 	/*private void selectNode(int i)
 	 {
 	 /* if(!fileLoaded || i < 0 || i >= iTotalNrOfNodes) return;
@@ -844,15 +863,15 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		}
 
 	}
-	
+
 	////////////////////////////////////////////////////////////////////////////
 	// drawing
-	
+
 	void drawmatrix(SubMatrix m, Graphics g)
 	{
-		m.paint(g,                    
+		m.paint(g,
 			jPrintEntriesInWindowBox.isSelected(),
-			jPrintNumbersInWindowBox.isSelected(),                    
+			jPrintNumbersInWindowBox.isSelected(),
 			jShowParallelNodes.isSelected(),
 			jDrawConnections.isSelected(),
 			jArrowConnectionsBox1.isSelected(),
@@ -860,10 +879,10 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 			jDrawDiffusionBox.isSelected(),
 			jFontsizeSlider.getValue());
 	}
-	
+
 	void drawmatrix(int i, Graphics g)
-	{		
-		drawmatrix(matrices[i], g);						
+	{
+		drawmatrix(matrices[i], g);
 	}
 	void drawMinMax(Graphics g)
 	{
@@ -876,14 +895,14 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		{
 			double d = i/((double)barLength);
 			g.setColor(Color.getHSBColor((float) (d * 0.8f), 1.0f, 1.0f));
-			g.drawLine(move+i, h, move+i, h-barHeight);		
+			g.drawLine(move+i, h, move+i, h-barHeight);
 		}
 		g.setColor(Color.black);
-		
+
 		g.drawString(""+globalMinValue, move-5-sm.getWidth(""+globalMinValue), h);
 		g.drawString(""+globalMaxValue, move+barLength+5, h);
 	}
-	
+
 	void drawAxis(Graphics g)
 	{
 		Point3D p2 = new Point3D();
@@ -891,25 +910,25 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		int axisLength=50;
 		double factor = 0.9;
 		double x, y, z;
-		if(dimension == 2) 
+		if(dimension == 2)
 		{
 			axisLength=15;
 			p2.x=30;
 			p2.y=0;
 			ix = (int)(axisLength+p2.x);
-			iy = (int)(getHeight()-axisLength-p2.y);			
+			iy = (int)(getHeight()-axisLength-p2.y);
 			g.drawLine(axisLength, getHeight()-axisLength, ix, iy);
 			g.drawString("x", ix, iy);
 
 			p2.x=0;
 			p2.y=30;
 			ix = (int)(axisLength+p2.x);
-			iy = (int)(getHeight()-axisLength-p2.y);			
+			iy = (int)(getHeight()-axisLength-p2.y);
 			g.drawLine(axisLength, getHeight()-axisLength, ix, iy);
 			g.drawString("y", ix, iy);
 			return;
 		}
-		
+
 		x=axisLength*factor; y=0; z=0;
 		p2.x = x;
 		p2.y = Math.cos(alpha) * y - Math.sin(alpha) * z;
@@ -941,7 +960,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		g.drawLine(axisLength, getHeight()-axisLength, ix, iy);
 		g.drawString("y", ix, iy);
 	}
-	
+
 	class MyDrawing extends JPanel
 	{
 
@@ -956,9 +975,9 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 			{
 				g.drawString(sError, 10, 10);
 				return;
-			}	
-			
-			
+			}
+
+
 			drawAxis(g);
 			drawMinMax(g);
 
@@ -1005,7 +1024,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 					gc.clearRect(0, 0, getWidth(), getHeight());
 					for (int i = i1; i < i2; i++)
 						drawmatrix(i, gc);
-						
+
 				}
 			}
 			int k = 0;
@@ -1038,9 +1057,9 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 			}
 		}
 	}
-	
+
 	////////////////////////////////////////////////////////////////////////////
-		
+
 
 	void setTitle(String str)
 	{
@@ -1054,7 +1073,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 	{
 		this.cvf = cvf;
 	}
-	
+
 	ConnectionViewer getFrame()
 	{
 		return cvf;
@@ -1351,7 +1370,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
             }
         });
 
-        jLabel5.setText("(c) Martin Rupp 2013-2014");
+        jLabel5.setText("(c) Martin Rupp 2013-2026");
 
         jLabel6.setText("University Frankfurt");
 
@@ -1575,18 +1594,18 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 				globalBounds.add(matrices[iSelectedMatrix].getBounds());
 			}
 		} else
-		{			
+		{
 			if ((evt.getModifiers() & MouseEvent.BUTTON3_MASK) == MouseEvent.BUTTON3_MASK)
 			{
 				// rotate
 				beta -= (evt.getX() - lastPoint.x) * 0.01;
-				alpha += (evt.getY() - lastPoint.y) * 0.01;				
+				alpha += (evt.getY() - lastPoint.y) * 0.01;
 			} else
 			{
 				// move viewpoint
 				TranslateDx -= dx / (scaleZoom * dzoom);
 				TranslateDy -= dy / (scaleZoom * dzoom);
-			}			
+			}
 		}
 		lastPoint.x = evt.getX();
 		lastPoint.y = evt.getY();
@@ -1622,7 +1641,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 			for (int i = 0; i < matrices.length; i++)
 				matrices[i].clearSelection();
 		}
-		
+
 
 		boolean bSelected[] = new boolean[matrices.length];
 		String s = "";
@@ -1832,7 +1851,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 	{
 		if (filename == null || matrices == null || matrices.length == 0)
         {
-            
+
             return;
         }
 
@@ -1847,7 +1866,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
         if (filediag.getFile() != null)
         {
 			ExportToPDF(filediag.getDirectory() + filediag.getFile());
-            
+
         }
 
         filediag.dispose();
@@ -2020,7 +2039,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
         // TODO add your handling code here:
     }//GEN-LAST:event_jComponentListActionPerformed
 
-	
+
 		/**
 	 * @param args the command line arguments
 	 * @throws InterruptedException
@@ -2060,8 +2079,8 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
     private javax.swing.JButton reopenButton;
     private javax.swing.JButton toSelectionButton;
     // End of variables declaration//GEN-END:variables
-	
-	
+
+
 
 	public void windowClosing(WindowEvent event)
 	{
@@ -2069,7 +2088,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		//event.getWindow().setVisible(false);
 		event.getWindow().dispose();
 	}
-	
+
 	/// try to release some memory
 	public void release()
 	{
@@ -2086,13 +2105,13 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 		}
 		System.gc();
 	}
-	
+
 	double getArrowSize()
 	{
 		return jArrowSizeSlider.getValue()*0.01;
 	}
-	
-	
+
+
 	/**
 	 * Handles files, jar entries, and deployed jar entries in a zip file (EAR).
 	 * @return The date if it can be determined, or null if not.
@@ -2108,7 +2127,7 @@ public class ConnectionViewerPanel extends javax.swing.JPanel implements Compone
 				} catch (URISyntaxException ignored) { }
 			} else if (resource.getProtocol().equals("jar")) {
 				String path = resource.getPath();
-				d = new Date( new File(path.substring(5, path.indexOf("!"))).lastModified() );    
+				d = new Date( new File(path.substring(5, path.indexOf("!"))).lastModified() );
 			}
 		}
 		return d;

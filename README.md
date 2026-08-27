@@ -1,17 +1,23 @@
 ConnectionViewer
 ===============================
+ConnectionViewer uses a very simple ASCII file format for Coordinates, Matrices and Vectors, which is implementable in every programming language in a couple of minutes.
 
-[![Build Status](https://travis-ci.org/UG4/ConnectionViewer.svg?branch=master)](https://travis-ci.org/UG4/ConnectionViewer)
+<img src="resources/img/connectionviewer.png" width="600px">
 
-Webpage: http://gcsc.uni-frankfurt.de/Members/mrupp/martin-rupps-homepage/connectionviewer
+## Running ConnectionViewer
 
-ConnectionViewer uses a very simple ASCII file format for Coordinates, Matrices and Vectors, which is implementable in every programming language in a couple of minutes, a description is here: 
-http://gcsc.uni-frankfurt.de/Members/mrupp/connectionviewer/mat-file-format-description
- 
-Here's also a sample gallery : http://gcsc.uni-frankfurt.de/Members/mrupp/connectionviewer/samples
-## Bash for ConnectionViewer
+	java -jar build/libs/ConnectionViewer.jar
+	java -jar build/libs/ConnectionViewer.jar resources/examples/bodensee.mat
 
-	java -jar <PATH>/ConnectionViewer/ConnectionViewer.jar %f
+Or via Gradle, without building a jar first:
+
+	./gradlew run --args="resources/examples/bodensee.mat"
+
+Started without a file, the app opens an empty window; use **open new** to load a
+matrix. The full list of command line options is in the header comment of
+`ConnectionViewer.java`, for example, to export a PDF of the Bodensee example:
+
+	java -jar build/libs/ConnectionViewer.jar resources/examples/bodensee.mat -width 950 -height 700 -exportPDF out.pdf -quit
 
 ## ConnectionViewer as VRL-Plugin
 
@@ -21,32 +27,56 @@ ConnectionViewer provides a [VRL-Studio](https://mihosoft.eu) plugin that can be
 
 ## Building ConnectionViewer
 
+See [BUILDING.md](BUILDING.md) for details. In short:
+
 ### Requirements
 
-- JDK >= 1.8
-- Internet connection (dependencies are downloaded automatically)
+- JDK >= 21
+- Internet connection (Gradle and the dependencies are downloaded automatically;
+  `settings.gradle.kts` will even fetch a matching JDK if the one on your `PATH`
+  is a different version)
 - IDE: [Gradle](http://www.gradle.org/) Plugin (not necessary for command line usage)
-
-### IDE
-
-Open the `ConnectionViewer` core [Gradle](http://www.gradle.org/) project in your favourite IDE (tested with NetBeans 8.2 and IntelliJ 2018) and build it
-by calling the `assemble` task.
 
 ### Command Line
 
-Navigate to the `ConnectionViewer` core [Gradle](http://www.gradle.org/) project (i.e., `path/to/ConnectionViewer`) and enter the following command
+Navigate to the `ConnectionViewer` core [Gradle](http://www.gradle.org/) project
+(i.e., `path/to/ConnectionViewer`) and enter the following command
 
 #### Bash (Linux/macOS/Cygwin/other Unix shell)
 
-    bash gradlew assemble
-    
+    ./gradlew macApp          # build/jpackage/ConnectionViewer.app (macOS only)
+    ./gradlew fatJar          # standalone app, without VRL
+    ./gradlew run             # compile and launch the GUI
+    ./gradlew vrlPlugin       # VRL plugin jar
+
 #### Windows (CMD)
 
-    gradlew assemble 
-    
+    gradlew fatJar
+
+### IDE
+
+Open the `ConnectionViewer` core [Gradle](http://www.gradle.org/) project in your
+favourite IDE and build it by calling the `fatJar` task (`assemble` also works and
+depends on it).
+
 ### Install VRL-Studio plugin via Gradle
 
 To install ConnectionViewer as [VRL-Studio](https://vrl-studio.mihosoft.eu/) plugin via gradle, call the `installVRLPlugin` task and (re)start VRL-Studio.
+
+It installs into `~/.vrl/<VRL major version>/default/plugin-updates`. Use a
+different location with:
+
+    ./gradlew installVRLPlugin -PvrlDir=/path/to/vrl/config
+
+### macOS application bundle
+
+    ./gradlew macApp
+
+produces `build/jpackage/ConnectionViewer.app` (~45 MB) with an embedded Java
+runtime, so it also runs on a Mac without a JDK installed. It registers the
+`.mat`, `.pmat`, `.vec`, `.pvec` and `.tarmat` file types, so those can be opened
+from Finder. The bundle is unsigned; on another machine Gatekeeper blocks it
+until you right-click and choose *Open*.
 
 # Some documentation:
 
@@ -66,13 +96,15 @@ To install ConnectionViewer as [VRL-Studio](https://vrl-studio.mihosoft.eu/) plu
 
 - Export: Export the current view to PDF or tex (as tikzpicture). See galery.
 
+- open new: Open a matrix file. If a file is already loaded it is opened in a new window, otherwise it is loaded into the current one.
+
 - reopen: Reopen the current file. Automatic reload: automatic reload if file changes.
 
 - Arrow Size, Font Size: Change arrow/font size.
 
 - all nodes / N1 / N2: display all nodes or neighborhood 1 / 2 / 3 etc. of the currently selected node(s). useful in 3d.
 
-- all comp: show different components. 
+- all comp: show different components.
 
 - recenter: recenter the loaded file.
 

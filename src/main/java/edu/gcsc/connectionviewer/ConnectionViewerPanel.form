@@ -499,7 +499,7 @@
                 </Component>
                 <Component class="javax.swing.JLabel" name="jLabel5">
                   <Properties>
-                    <Property name="text" type="java.lang.String" value="(c) Martin Rupp 2013-2014"/>
+                    <Property name="text" type="java.lang.String" value="(c) Martin Rupp 2013-2026"/>
                   </Properties>
                 </Component>
                 <Component class="javax.swing.JLabel" name="jLabel6">

@@ -59,7 +59,7 @@
  *      - y direction is now mathematical (up is +, down is -)
  * 3.13
  *	- y direction now also fixed in 3d
- * 
+ *
  * 3.13b
  *	- minor fixes (compatible with vrl-0.4.x)
  *
@@ -109,13 +109,13 @@
  *   -scaleZoom D
  *   -arrowConnections B -automaticReload B -drawConnections B -drawConvection B
  *   -drawDiffusion B -showParallelNodes B
- * 
+ *
  *   -exportPDF filename.pdf
  *   -exportTex filename.tex
  *   -quit (quit after exporting)
- * 3.33: - some tixz enhancements. 
+ * 3.33: - some tixz enhancements.
  *       - fixed toselection (again?)
- * 
+ *
  * @author Martin Rupp
  * @email martin.rupp@gcsc.uni-frankfurt.de
  */
@@ -128,41 +128,46 @@ import java.awt.Dimension;
  * @author mrupp
  */
 public class ConnectionViewer extends javax.swing.JFrame
-{	
-	
+{
+
 	private static final long serialVersionUID = 1L;
-	
+
 ////////////////////////////////////////////////////////
-	static int windowpos = 40;	
+	static int windowpos = 40;
 	boolean fileLoaded = false;
 	static ConnectionViewer cvf;
-	
-	
+
+
 	void readFile(String str)
-	{		
+	{
 		fileLoaded = true;
 		((ConnectionViewerPanel) jConnectionViewerPanel).readFile(str);
 	}
 
 	public ConnectionViewer()
-	{		
+	{
 		initComponents();
+
+		// The form pins the split pane children to a (0,0) minimum size so the
+		// panel can be squeezed inside a VRL canvas node; in a standalone
+		// window that lets the left control panel shrink below its width.
+		jConnectionViewerPanel.useLayoutDerivedMinimumSizes();
 
 		// window close adapters
 		addWindowListener(new WindowClosingAdapter(false));
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
-		
+
 		// set size and position so that futher windows are "staggered"
 		setSize(1000, 900);
 		setLocation(windowpos, windowpos);
 		windowpos += 20;
 		if (windowpos > 200)
 			windowpos = 35;
-		
+
 		// set title
 		setTitle("ConnectionViewer " + ConnectionViewerPanel.sConnectionViewerVersion + " - no file loaded.");
 
-		
+
 		if (MacOSXHelper.IsMacOSX())
 			MacOSXHelper.AddCloseDisposeAction(this);
 
@@ -259,7 +264,7 @@ public class ConnectionViewer extends javax.swing.JFrame
 			}
 		});
 	}
-	
+
 	public static class MyMacOSHandler extends MacOSXHelper.StdMacOsHandler
 	{
 		@Override
@@ -267,14 +272,14 @@ public class ConnectionViewer extends javax.swing.JFrame
 		{
 			ConnectionViewer cvf;
 			if(ConnectionViewer.cvf.fileLoaded == false)
-			cvf = ConnectionViewer.cvf;
+				cvf = ConnectionViewer.cvf;
 			else
-			cvf = new ConnectionViewer();
+				cvf = new ConnectionViewer();
 			if(filename != null)
 				cvf.readFile(filename);
 			cvf.setVisible(true);
 			return true;
-		}		
+		}
 	}
 
 	/**
@@ -290,6 +295,12 @@ public class ConnectionViewer extends javax.swing.JFrame
 			filename = args[0];
 
 		cvf = new ConnectionViewer();
+
+		// Register the macOS About/Open File/Quit handlers before the window is
+		// shown, so a file opened from Finder at launch is not missed.
+		if (useMacOSHelper && MacOSXHelper.IsMacOSX())
+			MacOSXHelper.InitMacOSX(new MyMacOSHandler());
+
 		if (filename != null)
 		{
 			CommandLineHelper cl = new CommandLineHelper(args);
@@ -315,20 +326,20 @@ public class ConnectionViewer extends javax.swing.JFrame
 				System.exit(0);
 
 		}
-		else if (useMacOSHelper && MacOSXHelper.IsMacOSX())
+		else
 		{
-			/*JFrame frame = new JFrame("ConnectionViewer");
-			frame.setVisible(true);
-			frame.setVisible(false);*/
-			MacOSXHelper.InitMacOSX(new MyMacOSHandler());
-		} else {
-			cvf = new ConnectionViewer();
+			// Started without a file. Up to Java 8 the window was shown by the
+			// com.apple.eawt "open application" event via MyMacOSHandler. That
+			// event has no equivalent in the public java.awt.Desktop API, so
+			// show the window directly. Previously the macOS branch returned
+			// here without ever calling setVisible, so on macOS the app started
+			// with no window at all unless a file was given on the command line.
 			cvf.setVisible(true);
 		}
 	}
-	
-	
-	
+
+
+
 	public static void main(String args[]) throws InterruptedException
 	{
 		startConnectionViewer(args,true);
@@ -337,6 +348,6 @@ public class ConnectionViewer extends javax.swing.JFrame
     private edu.gcsc.connectionviewer.ConnectionViewerPanel jConnectionViewerPanel;
     // End of variables declaration//GEN-END:variables
 
-	
-	
+
+
 }
