@@ -1,4 +1,22 @@
+# Build output
 /build/
-/dist/
-/ConnectionViewer.app/
-/ConnectionViewer.jar
+/out/
+/bin/
+
+# Gradle
+/.gradle/
+# local state written by the Gradle Kotlin DSL
+/.kotlin/
+
+# IDEs
+/.vscode/
+/.settings/
+.classpath
+.project
+/.idea/
+/ConnectionViewer.iml
+/.nb-gradle/
+/nbproject/private/
+
+# macOS Finder metadata
+.DS_Store
