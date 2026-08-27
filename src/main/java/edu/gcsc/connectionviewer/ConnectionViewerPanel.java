@@ -73,8 +73,8 @@ import javax.swing.ScrollPaneConstants;
 public class ConnectionViewerPanel extends javax.swing.JPanel implements ComponentListener
 {
 	static final public String sConnectionViewerVersion =
-			"3.32";
-			//"3.32b built " + getClassBuildTime();
+			"3.4";
+			//"3.4b built " + getClassBuildTime();
 
 	private static final long serialVersionUID = 1L;
 

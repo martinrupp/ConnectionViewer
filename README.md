@@ -45,6 +45,7 @@ Navigate to the `ConnectionViewer` core [Gradle](http://www.gradle.org/) project
 #### Bash (Linux/macOS/Cygwin/other Unix shell)
 
     ./gradlew macApp          # build/jpackage/ConnectionViewer.app (macOS only)
+    ./gradlew macDmg          # build/distributions/ConnectionViewer-<version>.dmg (macOS only)
     ./gradlew fatJar          # standalone app, without VRL
     ./gradlew run             # compile and launch the GUI
     ./gradlew vrlPlugin       # VRL plugin jar
@@ -70,13 +71,17 @@ different location with:
 
 ### macOS application bundle
 
-    ./gradlew macApp
+    ./gradlew macApp     # build/jpackage/ConnectionViewer.app       (~45 MB)
+    ./gradlew macDmg     # build/distributions/ConnectionViewer-3.4.dmg (~30 MB)
 
-produces `build/jpackage/ConnectionViewer.app` (~45 MB) with an embedded Java
-runtime, so it also runs on a Mac without a JDK installed. It registers the
-`.mat`, `.pmat`, `.vec`, `.pvec` and `.tarmat` file types, so those can be opened
-from Finder. The bundle is unsigned; on another machine Gatekeeper blocks it
-until you right-click and choose *Open*.
+Both embed a Java runtime, so they also run on a Mac without a JDK installed;
+that runtime is what accounts for nearly all of the size. Use `macDmg` for
+distribution — the disk image is compressed, roughly a third smaller than the
+`.app` directory.
+
+They register the `.mat`, `.pmat`, `.vec`, `.pvec` and `.tarmat` file types, so
+those can be opened from Finder. The bundle is unsigned; on another machine
+Gatekeeper blocks it until you right-click and choose *Open*.
 
 # Some documentation:
 

@@ -33,7 +33,7 @@ plugins {
 }
 
 group = "edu.gcsc.connectionviewer"
-version = "3.32"
+version = "3.4"
 
 // The old build used 0.4.3.2.4, which was only ever published to jcenter and is
 // therefore unresolvable since jcenter shut down. 0.4.4.0.0 is the newest
@@ -191,52 +191,77 @@ val jlinkRuntime = tasks.register<Exec>("jlinkRuntime") {
     )
 }
 
-// Native macOS .app bundle via jpackage, replacing resources/AppTemplate.app
+// Native macOS packaging via jpackage, replacing resources/AppTemplate.app
 // (whose JavaApplicationStub relied on a system JVM that macOS no longer ships).
+//
+// `macApp` produces the plain .app directory, `macDmg` a compressed disk image
+// for distribution - the .app is ~45 MB on disk, the .dmg roughly a third less,
+// because almost all of it is the embedded Java runtime.
+val jpackageIcon = file("resources/AppTemplate.app/Contents/Resources/GenericApp.icns")
+
+// Keeps the CFBundleDocumentTypes resources/AppTemplate.app declared, so
+// double-clicking a .mat in Finder reaches MacOSXHelper's open-file handler.
+val jpackageFileAssoc = layout.buildDirectory.file("tmp/jpackage-file-associations.properties")
+
+fun writeFileAssociations() {
+    jpackageFileAssoc.get().asFile.apply {
+        parentFile.mkdirs()
+        writeText(
+            """
+            extension=mat pmat vec pvec tarmat
+            mime-type=application/x-connectionviewer-matrix
+            description=ConnectionViewer matrix
+            """.trimIndent()
+        )
+    }
+}
+
+fun jpackageArgs(type: String, destDir: Directory): List<String> = listOf(
+    javaToolchains.launcherFor(java.toolchain).get()
+        .metadata.installationPath.file("bin/jpackage").asFile.absolutePath,
+    "--type", type,
+    "--name", "ConnectionViewer",
+    "--app-version", project.version.toString(),
+    "--input", layout.buildDirectory.dir("libs").get().asFile.absolutePath,
+    "--main-jar", "ConnectionViewer.jar",
+    "--main-class", application.mainClass.get(),
+    "--java-options", "-Xms64m",
+    "--java-options", "-Xmx2048m",
+    "--icon", jpackageIcon.absolutePath,
+    "--file-associations", jpackageFileAssoc.get().asFile.absolutePath,
+    "--runtime-image", layout.buildDirectory.dir("runtime").get().asFile.absolutePath,
+    "--dest", destDir.asFile.absolutePath,
+)
+
 tasks.register<Exec>("macApp") {
     group = "distribution"
     description = "Builds ConnectionViewer.app using jpackage (macOS only)."
     dependsOn(fatJar, jlinkRuntime)
 
-    val jpackage = javaToolchains.launcherFor(java.toolchain).get()
-        .metadata.installationPath.file("bin/jpackage").asFile
-    val destDir = layout.buildDirectory.dir("jpackage")
-    val icon = file("resources/AppTemplate.app/Contents/Resources/GenericApp.icns")
-    // Keeps the CFBundleDocumentTypes resources/AppTemplate.app declared, so
-    // double-clicking a .mat in Finder reaches MacOSXHelper's open-file handler.
-    val fileAssoc = layout.buildDirectory.file("tmp/jpackage-file-associations.properties")
-
+    val destDir = layout.buildDirectory.dir("jpackage").get()
     doFirst {
-        delete(destDir.get().dir("ConnectionViewer.app"))
-        fileAssoc.get().asFile.apply {
-            parentFile.mkdirs()
-            writeText(
-                """
-                extension=mat pmat vec pvec tarmat
-                mime-type=application/x-connectionviewer-matrix
-                description=ConnectionViewer matrix
-                """.trimIndent()
-            )
-        }
+        delete(destDir.dir("ConnectionViewer.app"))
+        writeFileAssociations()
     }
-    commandLine(
-        jpackage.absolutePath,
-        "--type", "app-image",
-        "--name", "ConnectionViewer",
-        "--app-version", project.version.toString(),
-        "--input", layout.buildDirectory.dir("libs").get().asFile.absolutePath,
-        "--main-jar", "ConnectionViewer.jar",
-        "--main-class", application.mainClass.get(),
-        "--java-options", "-Xms64m",
-        "--java-options", "-Xmx2048m",
-        "--icon", icon.absolutePath,
-        "--file-associations", fileAssoc.get().asFile.absolutePath,
-        "--runtime-image", layout.buildDirectory.dir("runtime").get().asFile.absolutePath,
-        "--dest", destDir.get().asFile.absolutePath,
-    )
-    doLast {
-        logger.lifecycle("Created ${destDir.get().dir("ConnectionViewer.app").asFile}")
+    commandLine(jpackageArgs("app-image", destDir))
+    doLast { logger.lifecycle("Created ${destDir.dir("ConnectionViewer.app").asFile}") }
+}
+
+tasks.register<Exec>("macDmg") {
+    group = "distribution"
+    description = "Builds ConnectionViewer-<version>.dmg using jpackage (macOS only)."
+    dependsOn(fatJar, jlinkRuntime)
+
+    val destDir = layout.buildDirectory.dir("distributions").get()
+    // jpackage refuses to overwrite an existing image, and names it
+    // ConnectionViewer-<app-version>.dmg.
+    val dmg = destDir.file("ConnectionViewer-${project.version}.dmg")
+    doFirst {
+        delete(dmg)
+        writeFileAssociations()
     }
+    commandLine(jpackageArgs("dmg", destDir))
+    doLast { logger.lifecycle("Created ${dmg.asFile}") }
 }
 
 tasks.named("assemble") { dependsOn(fatJar) }

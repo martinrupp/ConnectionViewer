@@ -39,6 +39,7 @@ Tasks
     ./gradlew fatJar             # app: build/libs/ConnectionViewer.jar (no VRL)
     ./gradlew run                # compile and launch the GUI
     ./gradlew macApp             # build/jpackage/ConnectionViewer.app (macOS only)
+    ./gradlew macDmg             # build/distributions/ConnectionViewer-<version>.dmg
 
     ./gradlew vrlPlugin          # plugin: build/vrl-plugin/ConnectionViewer.jar
     ./gradlew installVRLPlugin   # ...and copy it into VRL's plugin-updates folder
@@ -95,6 +96,13 @@ per `jdeps`); that keeps it at ~45 MB instead of the ~160 MB a full JDK costs.
 It carries the same `.mat`/`.pmat`/`.vec`/`.pvec`/`.tarmat` file associations
 `AppTemplate.app` declared, so opening one of those from Finder reaches
 `MacOSXHelper`'s open-file handler.
+
+`macDmg` wraps the same bundle in a compressed disk image
+(`build/distributions/ConnectionViewer-<version>.dmg`, ~30 MB versus ~45 MB for
+the plain `.app`). Prefer it for distribution; on macOS the only meaningful size
+lever is compression, since `jlink` cannot shrink `java.desktop` or HotSpot
+further (`--strip-native-debug-symbols` is Linux-only, and dropping
+`java.logging` saves 8 KB).
 
 The bundle is **unsigned**: on another Mac, Gatekeeper blocks it until the user
 right-clicks and chooses Open. Signing requires an Apple Developer ID and
