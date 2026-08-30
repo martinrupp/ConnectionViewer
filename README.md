@@ -1,6 +1,6 @@
 ConnectionViewer
 ===============================
-ConnectionViewer uses a very simple ASCII file format for Coordinates, Matrices and Vectors, which is implementable in every programming language in a couple of minutes.
+ConnectionViewer uses a very simple ASCII file format for Coordinates, Matrices and Vectors, which is implementable in every programming language in a couple of minutes. It is documented in [FORMAT.md](FORMAT.md).
 
 <img src="resources/img/connectionviewer.png" width="600px">
 
