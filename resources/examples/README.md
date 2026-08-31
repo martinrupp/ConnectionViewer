@@ -1,4 +1,4 @@
 ConnectionViewer Examples
 ===============================
 
-Examples are made with ug4 (Andreas Vogel, Sebastian Reiter, Martin Rupp, Arne NŠgel, Gabriel Wittum.).
+Examples are made with ug4 (Andreas Vogel, Sebastian Reiter, Martin Rupp, Arne NÃ¤gel, Gabriel Wittum.).
