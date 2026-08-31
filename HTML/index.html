@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ConnectionViewer (HTML)</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="app">
+
+	<div id="sidebar">
+		<h1>ConnectionViewer</h1>
+
+		<fieldset>
+			<legend>File</legend>
+			<button id="btnOpenFiles">open files…</button>
+			<button id="btnOpenDir">open folder…</button>
+			<p class="hint">
+				Select the <code>.mat</code>/<code>.pmat</code>/<code>.vec</code>/<code>.pvec</code>/<code>.tarmat</code>
+				file together with all files it references (<code>.marks</code>, <code>.indices</code>, the
+				<code>.mat</code> files of a <code>.pmat</code>) — or just drop a whole folder onto the drawing area.
+			</p>
+			<label class="row">example
+				<select id="examples">
+					<option value="">–</option>
+				</select>
+			</label>
+			<label class="row">file
+				<select id="fileList"></select>
+			</label>
+			<button id="btnReload">reopen</button>
+			<input type="file" id="fileInput" multiple
+				accept=".mat,.pmat,.vec,.pvec,.marks,.indices,.tarmat" hidden>
+			<input type="file" id="dirInput" webkitdirectory hidden>
+		</fieldset>
+
+		<fieldset>
+			<legend>View</legend>
+			<button id="btnRecenter">recenter</button>
+			<button id="btnZoomSel">zoom to selection</button>
+			<button id="btnReMove">re-move</button>
+			<label class="row">nodes
+				<select id="neighborhood">
+					<option value="0">all nodes</option>
+					<option value="1">N1</option>
+					<option value="2">N2</option>
+					<option value="3">N3</option>
+					<option value="4">N4</option>
+				</select>
+			</label>
+			<label class="row">comp
+				<select id="components">
+					<option value="-1">all comp</option>
+				</select>
+			</label>
+		</fieldset>
+
+		<fieldset>
+			<legend>Display</legend>
+			<label><input type="checkbox" id="optConnections" checked> Connections</label>
+			<label><input type="checkbox" id="optArrows"> as Arrows</label>
+			<label><input type="checkbox" id="optConvection"> Convection</label>
+			<label><input type="checkbox" id="optDiffusion"> Diffusion</label>
+			<label><input type="checkbox" id="optEntries" checked> Print Entries in Window</label>
+			<label><input type="checkbox" id="optIndices"> Print Indices in Window</label>
+			<label><input type="checkbox" id="optParallel"> Parallel Nodes</label>
+			<label><input type="checkbox" id="optZCompression"> z-compression (vec)</label>
+			<label class="row">font size
+				<input type="range" id="fontSize" min="6" max="24" value="11">
+			</label>
+			<label class="row">arrow size
+				<input type="range" id="arrowSize" min="0" max="1000" value="100">
+			</label>
+			<label class="row">z-zoom
+				<input type="range" id="zCompressionSlider" min="1" max="100" value="100">
+			</label>
+		</fieldset>
+
+		<fieldset>
+			<legend>Search node</legend>
+			<input type="text" id="search" placeholder="index or fileNr.index">
+		</fieldset>
+
+		<fieldset>
+			<legend>Export</legend>
+			<button id="btnExportTex">export .tex (tikz)</button>
+		</fieldset>
+
+		<p class="hint">
+			mouse wheel: zoom · drag: move · right-drag: rotate (3d) ·
+			click: select node · shift+click: add to selection ·
+			shift+drag: move one parallel file
+		</p>
+
+		<p class="copyright">© Martin Rupp 2013-2026</p>
+	</div>
+
+	<div id="main">
+		<div id="statusbar"><span id="status">no file loaded.</span></div>
+		<div id="canvasWrap">
+			<canvas id="display"></canvas>
+			<div id="dropHint">drop .mat / .pmat / .vec / .pvec / .tarmat files or a folder here</div>
+		</div>
+		<div id="infoWrap">
+			<pre id="info"></pre>
+		</div>
+	</div>
+
+</div>
+
+<dialog id="warnDialog">
+	<h2>Some referenced files could not be read</h2>
+	<p id="warnText"></p>
+	<pre id="warnList"></pre>
+	<p class="hint" id="warnHint"></p>
+	<button id="warnOk" autofocus>OK</button>
+</dialog>
+
+<script src="js/parser.js"></script>
+<script src="js/model.js"></script>
+<script src="js/gfx.js"></script>
+<script src="js/render.js"></script>
+<script src="js/tex.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

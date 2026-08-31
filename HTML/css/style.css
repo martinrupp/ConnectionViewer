@@ -1,0 +1,214 @@
+* { box-sizing: border-box; }
+
+html, body {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+	font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+	color: #222;
+	background: #ececec;
+}
+
+#app {
+	display: flex;
+	height: 100%;
+}
+
+/* ---------------------------------------------------------------- sidebar */
+
+#sidebar {
+	width: 260px;
+	min-width: 260px;
+	padding: 8px 10px 20px;
+	overflow-y: auto;
+	background: #f4f4f4;
+	border-right: 1px solid #c8c8c8;
+}
+
+#sidebar h1 {
+	font-size: 15px;
+	margin: 4px 0 10px;
+}
+
+fieldset {
+	border: 1px solid #d2d2d2;
+	border-radius: 4px;
+	margin: 0 0 10px;
+	padding: 6px 8px 8px;
+	background: #fff;
+	/* fieldsets default to min-content width, which would not shrink here */
+	min-width: 0;
+	min-inline-size: 0;
+}
+
+legend {
+	font-size: 11px;
+	text-transform: uppercase;
+	letter-spacing: .04em;
+	color: #666;
+	padding: 0 4px;
+}
+
+#sidebar label {
+	display: block;
+	margin: 3px 0;
+}
+
+#sidebar label.row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 6px;
+}
+
+#sidebar label.row select,
+#sidebar label.row input[type=range] {
+	flex: 1 1 auto;
+	width: 0;         /* let flex size them, never their content */
+	min-width: 0;
+	max-width: 100%;
+}
+
+#sidebar select {
+	font: inherit;
+	text-overflow: ellipsis;
+}
+
+button {
+	display: block;
+	width: 100%;
+	margin: 3px 0;
+	padding: 4px 6px;
+	font: inherit;
+	background: #fdfdfd;
+	border: 1px solid #bbb;
+	border-radius: 3px;
+	cursor: pointer;
+}
+
+button:hover { background: #f0f0f0; }
+button:active { background: #e4e4e4; }
+
+input[type=text] {
+	width: 100%;
+	padding: 3px 5px;
+	font: inherit;
+	border: 1px solid #bbb;
+	border-radius: 3px;
+}
+
+.hint {
+	font-size: 11px;
+	color: #666;
+	margin: 6px 0 0;
+}
+
+.copyright {
+	margin: 10px 0 0;
+	font-size: 10px;
+	color: #888;
+}
+
+.hint code {
+	font-size: 10px;
+	background: #eee;
+	padding: 0 2px;
+	border-radius: 2px;
+}
+
+/* ------------------------------------------------------------------- main */
+
+#main {
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+#statusbar {
+	padding: 4px 8px;
+	font-size: 12px;
+	background: #f4f4f4;
+	border-bottom: 1px solid #c8c8c8;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+#canvasWrap {
+	position: relative;
+	flex: 1 1 auto;
+	min-height: 0;
+	background: #fff;
+}
+
+#canvasWrap.dragover { outline: 3px dashed #4a90d9; outline-offset: -6px; }
+
+#display {
+	display: block;
+	width: 100%;
+	height: 100%;
+	cursor: crosshair;
+}
+
+#dropHint {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #999;
+	pointer-events: none;
+}
+
+#dropHint.hidden { display: none; }
+
+#infoWrap {
+	height: 170px;
+	min-height: 170px;
+	overflow: auto;
+	border-top: 1px solid #c8c8c8;
+	background: #fbfbfb;
+}
+
+/* ----------------------------------------------------------------- dialog */
+
+#warnDialog {
+	max-width: 520px;
+	padding: 14px 16px 16px;
+	border: 1px solid #b0b0b0;
+	border-radius: 6px;
+	box-shadow: 0 8px 30px rgba(0, 0, 0, .25);
+	font: inherit;
+	color: inherit;
+}
+
+#warnDialog::backdrop { background: rgba(0, 0, 0, .35); }
+
+#warnDialog h2 {
+	margin: 0 0 8px;
+	font-size: 14px;
+}
+
+#warnDialog p { margin: 0 0 8px; }
+
+#warnList {
+	margin: 0 0 10px;
+	padding: 6px 8px;
+	max-height: 220px;
+	overflow: auto;
+	background: #f6f6f6;
+	border: 1px solid #e0e0e0;
+	border-radius: 3px;
+	font: 11px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	white-space: pre;
+}
+
+#warnDialog button { width: auto; min-width: 90px; margin-left: auto; }
+
+#info {
+	margin: 0;
+	padding: 6px 8px;
+	font: 11px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	white-space: pre;
+}
