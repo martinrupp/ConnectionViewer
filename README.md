@@ -4,6 +4,9 @@ ConnectionViewer uses a very simple ASCII file format for Coordinates, Matrices 
 
 <img src="resources/img/connectionviewer.png" width="600px">
 
+There is also a browser version in [HTML/](HTML/README.md) — open
+`HTML/index.html`, no build required.
+
 ## Running ConnectionViewer
 
 	java -jar build/libs/ConnectionViewer.jar
